@@ -42,6 +42,7 @@ backend:
     tls_ca: ""
     # TLS debugging levels = 1-5
     tls_debug: 1
+    pipeline: ""
   splunk:
     host: 127.0.0.1
     port: 8088

@@ -22,6 +22,23 @@ spec:
 {{- end }}
     spec:
       serviceAccountName: {{ template "fluent-bit.serviceAccountName" . }}
+      initContainers:
+      - name: put-pipeline
+        image: strapdata/curl:0.1
+        imagePullPolicy: IfNotPresent
+        command: ["curl", "-H", "Content-Type: application/json", "-XPUT", "http://{{ .Values.backend.es.host }}:{{ .Values.backend.es.port }}/_ingest/pipeline/fluentbit", "-d", "@/fluent-bit/etc/fluentbit-pipeline.json"]
+        volumeMounts:
+        - name: pipeline
+          mountPath: /fluent-bit/etc/fluentbit-pipeline.json
+          subPath: fluentbit-pipeline.json
+      - name: put-template
+        image: strapdata/curl:0.1
+        imagePullPolicy: IfNotPresent
+        command: ["curl", "-H", "Content-Type: application/json", "-XPUT", "http://{{ .Values.backend.es.host }}:{{ .Values.backend.es.port }}/_template/template_fluentbit", "-d", "@/fluent-bit/etc/fluentbit-template.json"]
+        volumeMounts:
+        - name: template
+          mountPath: /fluent-bit/etc/fluentbit-template.json
+          subPath: fluentbit-template.json
       containers:
       - name: fluent-bit
         image: "{{ .Values.image.fluent_bit.repository }}:{{ .Values.image.fluent_bit.tag }}"
@@ -97,6 +114,12 @@ spec:
       - name: config
         configMap:
           name: {{ if .Values.existingConfigMap }}{{ .Values.existingConfigMap }}{{- else }}{{ template "fluent-bit.fullname" . }}-config{{- end }}
+      - name: pipeline
+        configMap:
+          name: {{ template "fluent-bit.fullname" . }}-elassandra-pipeline
+      - name: template
+        configMap:
+          name: {{ template "fluent-bit.fullname" . }}-elassandra-template
 {{- if .Values.extraVolumes }}
 {{ toYaml .Values.extraVolumes | indent 6 }}
 {{- end }}
